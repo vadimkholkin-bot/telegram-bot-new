@@ -4,8 +4,7 @@ import re
 import asyncio
 from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-import logging
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, CallbackQueryHandler
 
 # Настройка логирования
 logging.basicConfig(
@@ -637,4 +636,5 @@ class DvoretskiyBot:
 
 if __name__ == "__main__":
     bot = DvoretskiyBot()
+
     bot.run()
