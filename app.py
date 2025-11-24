@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from bot import bot_instance
 import logging
+import os
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -36,13 +37,11 @@ def webhook():
 def set_webhook():
     """Установка веб-хука - вызовите этот URL один раз"""
     try:
-        from telegram import Bot
         import requests
         
         token = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
         
-        # Получаем ваше имя пользователя для URL
-        import os
+        # Получаем имя пользователя для URL
         username = os.environ.get('USER', 'yourusername')
         webhook_url = f"https://{username}.pythonanywhere.com/webhook"
         
