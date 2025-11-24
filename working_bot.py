@@ -36,46 +36,40 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = user_names[user_id].get("name", user_first_name)
         await update.message.reply_text(f"С возвращением, {name}!")
 
-# Обработка ВСЕХ сообщений (для отладки)
+# Обработка ВСЕХ сообщений
 async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     text = update.message.text
     chat_type = update.message.chat.type
     chat_id = update.message.chat.id
     
-    print(f"🔍 СООБЩЕНИЕ: chat_type={chat_type}, chat_id={chat_id}, user_id={user_id}, text='{text}'")
+    print(f"📨 СООБЩЕНИЕ: тип='{chat_type}', чат={chat_id}, юзер={user_id}, текст='{text}'")
     
     # ЛИЧНЫЕ сообщения
     if chat_type == "private":
-        print("📍 Это ЛИЧНОЕ сообщение")
+        print("📍 Обрабатываю как ЛИЧНОЕ сообщение")
         if user_id in user_names and user_names[user_id].get("status") == "awaiting_name":
             user_names[user_id] = {"name": text, "status": "registered"}
-            print(f"✅ Пользователь {user_id} зарегистрирован как: {text}")
             await update.message.reply_text(f"🎉 Отлично, {text}! Вы зарегистрированы!")
         else:
             name = user_names.get(user_id, {}).get("name", "друг")
             await update.message.reply_text(f"Привет, {name}! Вы написали: {text}")
     
-    # ГРУППОВЫЕ сообщения
-    elif chat_type in ["group", "supergroup"]:
-        print(f"📍 Это ГРУППОВОЕ сообщение. ID группы: {chat_id}")
-        
-        # Получаем имя пользователя
+    # ГРУППОВЫЕ сообщения - ВСЕГДА обрабатываем по-другому
+    else:
+        print(f"📍 Обрабатываю как ГРУППОВОЕ сообщение (тип: {chat_type})")
         user_name = user_names.get(user_id, {}).get("name", "друг")
         text_lower = text.lower()
         
-        print(f"🔍 Анализирую текст: '{text_lower}'")
+        print(f"🔍 Анализирую групповое сообщение: '{text_lower}'")
         
-        # Ответы на ключевые фразы
         if "мой день рождения" in text_lower:
             print("🎂 Найдена фраза 'мой день рождения'")
             await update.message.reply_text(f"{user_name}, ваша дата дня рождения еще не сохранена")
-            return
         
         elif "дни рождения" in text_lower:
             print("🎂 Найдена фраза 'дни рождения'")
             await update.message.reply_text(f"{user_name}, список дней рождений пока пуст")
-            return
         
         elif "правила" in text_lower:
             print("📚 Найдена фраза 'правила'")
@@ -88,16 +82,14 @@ async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE
                 "5. 🤖 Бот поможет определить подходящую тему"
             )
             await update.message.reply_text(rules_text)
-            return
         
         elif "темы" in text_lower:
             print("🏷️ Найдена фраза 'темы'")
             await update.message.reply_text(f"{user_name}, доступные темы: На каждый день, Новости, Школьные годы и др.")
-            return
         
         else:
-            print(f"❌ Не нашел ключевых фраз в групповом сообщении")
-            # В группе не отвечаем на обычные сообщения
+            print(f"❌ Не нашел ключевых фраз, НЕ отвечаю")
+            # В группе НЕ отвечаем на обычные сообщения - это важно!
 
 # Команда /myinfo
 async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -113,7 +105,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = len([u for u in user_names.values() if u.get("status") == "registered"])
     await update.message.reply_text(f"🟢 Бот работает! Зарегистрировано: {count}")
 
-# Настройка обработчиков - ТЕПЕРЬ ОДИН ОБРАБОТЧИК ДЛЯ ВСЕХ СООБЩЕНИЙ
+# Настройка обработчиков
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("myinfo", myinfo_command))
 app.add_handler(CommandHandler("status", status_command))
