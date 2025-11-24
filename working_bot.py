@@ -35,9 +35,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Обработка сообщений в ЛИЧКЕ
 async def handle_private_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type != "private":
-        return
-        
     user_id = update.message.from_user.id
     text = update.message.text.strip()
     
@@ -53,9 +50,6 @@ async def handle_private_messages(update: Update, context: ContextTypes.DEFAULT_
 
 # Обработка сообщений в ГРУППЕ
 async def handle_group_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.message.chat.type == "private":
-        return
-        
     user_id = update.message.from_user.id
     text = update.message.text.lower().strip()
     
@@ -67,15 +61,49 @@ async def handle_group_messages(update: Update, context: ContextTypes.DEFAULT_TY
     # Ответы на ключевые фразы
     if "мой день рождения" in text:
         await update.message.reply_text(f"{user_name}, ваша дата дня рождения еще не сохранена")
+        return
     
-    elif "дни рождения" in text:
+    if "дни рождения" in text:
         await update.message.reply_text(f"{user_name}, список дней рождений пока пуст")
+        return
     
-    elif "правила" in text:
-        await update.message.reply_text(f"{user_name}, правила группы:\n1. Уважайте друг друга\n2. Соблюдайте темы")
+    if "правила" in text:
+        rules_text = (
+            f"{user_name}, правила группы:\n\n"
+            "1. 📚 Соблюдайте тематику обсуждений\n"
+            "2. 🚫 Запрещены политические и религиозные темы\n"
+            "3. 💬 Уважайте других участников\n"
+            "4. 🎯 Размещайте сообщения в соответствующих темах\n"
+            "5. 🤖 Бот поможет определить подходящую тему"
+        )
+        await update.message.reply_text(rules_text)
+        return
     
-    elif "темы" in text:
-        await update.message.reply_text(f"{user_name}, доступные темы:\n• Общение\n• Новости\n• Воспоминания")
+    if "темы" in text:
+        topics_text = (
+            f"{user_name}, доступные темы:\n\n"
+            "🏷️ На каждый день\n"
+            "🏷️ Новости\n" 
+            "🏷️ Молодые годы\n"
+            "🏷️ Школьные годы\n"
+            "🏷️ Мы после школы\n"
+            "🏷️ Вечера встречи\n"
+            "🏷️ Моя семья\n"
+            "🏷️ Мой город\n"
+            "🏷️ Мой сад\n"
+            "🏷️ Мой отпуск\n"
+            "🏷️ Я кулинар\n"
+            "🏷️ Хобби\n"
+            "🏷️ Моё здоровье\n"
+            "🏷️ Правила, советы, обучение\n"
+            "🏷️ Юмор и для настроения\n"
+            "🏷️ Мой день рождения"
+        )
+        await update.message.reply_text(topics_text)
+        return
+    
+    # Если не нашли ключевых фраз - не отвечаем
+    print(f"❌ Не нашел ключевых фраз в сообщении: {text}")
 
 # Команда /myinfo
 async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
