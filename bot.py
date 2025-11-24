@@ -639,8 +639,7 @@ if __name__ == "__main__":
     bot_instance.app.run_polling()
 from flask import Flask
 import threading
-
-# Добавьте этот код в САМЫЙ КОНЕЦ файла bot.py
+import time
 
 # Создаем простой Flask сервер
 flask_app = Flask(__name__)
@@ -656,13 +655,15 @@ def health():
 def run_flask():
     flask_app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
 
-# Запускаем Flask в отдельном потоке
+# Запускаем Flask в отдельном потоке СРАЗУ
+flask_thread = threading.Thread(target=run_flask, daemon=True)
+flask_thread.start()
+
+# Даем Flask время запуститься
+time.sleep(3)
+
+# Запускаем бота
 if __name__ == "__main__":
-    # Запускаем Flask сервер
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    
-    # Запускаем бота
     print("=" * 60)
     print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
     print(f"👥 Группа: {GROUP_CHAT_ID}")
@@ -671,5 +672,3 @@ if __name__ == "__main__":
     print("=" * 60)
     
     bot_instance.app.run_polling()
-
-
