@@ -1,6 +1,6 @@
 import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Настройка
 BOT_TOKEN = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
@@ -14,24 +14,18 @@ app = Application.builder().token(BOT_TOKEN).build()
 
 # Команда /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🤖 Привет! Я бот Дворецкий! Работаю на Railway!")
+    await update.message.reply_text("🤖 Привет! Я бот Дворецкий! Работаю на PythonAnywhere!")
 
 # Команда /help  
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Помощь: /start - начать")
 
-# Обычные сообщения
-async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    await update.message.reply_text(f"Вы написали: {text}")
-
 # Настройка обработчиков
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("help", help_command))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
 
 # Запуск бота
 if __name__ == "__main__":
-    print("🚀 Бот запускается...")
+    print("🚀 Бот запускается на PythonAnywhere...")
     app.run_polling()
     print("✅ Бот работает!")
