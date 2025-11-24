@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from flask import Flask
+import threading
 
 # Настройка логирования
 logging.basicConfig(
@@ -307,7 +309,7 @@ class DvoretskiyBot:
                 await self.process_today_holiday(update, user_name)
                 return
             
-            elif any(cmd in message_lollow for cmd in ["ближайший праздник", "следующий праздник", "когда следующий праздник"]):
+            elif any(cmd in message_lower for cmd in ["ближайший праздник", "следующий праздник", "когда следующий праздник"]):
                 await self.process_next_holiday(update, user_name)
                 return
             
@@ -624,24 +626,21 @@ class DvoretskiyBot:
         user_name = self.get_user_name(user_id)
         await self.process_rules(update, user_name)
 
-# Создаем экземпляр бота для использования в app.py
+    def start_polling(self):
+        """Запуск бота в режиме polling"""
+        print("=" * 60)
+        print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
+        print(f"👥 Группа: {GROUP_CHAT_ID}")
+        print(f"📊 Зарегистрировано пользователей: {len(self.user_data)}")
+        print("🎯 Все системы активированы")
+        print("=" * 60)
+        
+        self.app.run_polling()
+
+# Создаем экземпляр бота
 bot_instance = DvoretskiyBot()
 
-# Для локального тестирования (раскомментируйте если нужно тестировать локально)
-if __name__ == "__main__":
-    print("=" * 60)
-    print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
-    print(f"👥 Группа: {GROUP_CHAT_ID}")
-    print(f"📊 Зарегистрировано пользователей: {len(bot_instance.user_data)}")
-    print("🎯 Все системы активированы")
-    print("=" * 60)
-    
-    bot_instance.app.run_polling()
-from flask import Flask
-import threading
-import time
-
-# Создаем простой Flask сервер
+# Создаем Flask приложение для health checks
 flask_app = Flask(__name__)
 
 @flask_app.route('/')
@@ -652,23 +651,27 @@ def health_check():
 def health():
     return "OK"
 
-def run_flask():
-    flask_app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+@flask_app.route('/bot-status')
+def bot_status():
+    return {
+        "status": "running",
+        "users_count": len(bot_instance.user_data),
+        "birthdays_count": len(bot_instance.birthdays)
+    }
 
-# Запускаем Flask в отдельном потоке СРАЗУ
-flask_thread = threading.Thread(target=run_flask, daemon=True)
-flask_thread.start()
+def run_bot():
+    """Запуск бота в отдельном потоке"""
+    bot_instance.start_polling()
 
-# Даем Flask время запуститься
-time.sleep(3)
-
-# Запускаем бота
-if __name__ == "__main__":
-    print("=" * 60)
-    print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
-    print(f"👥 Группа: {GROUP_CHAT_ID}")
-    print(f"📊 Зарегистрировано пользователей: {len(bot_instance.user_data)}")
-    print("🎯 Все системы активированы")
-    print("=" * 60)
+def start_services():
+    """Запуск всех сервисов"""
+    # Запускаем бота в отдельном потоке
+    bot_thread = threading.Thread(target=run_bot, daemon=True)
+    bot_thread.start()
     
-    bot_instance.app.run_polling()
+    # Запускаем Flask в основном потоке (это обязательно для Render)
+    port = int(os.environ.get('PORT', 5000))
+    flask_app.run(host='0.0.0.0', port=port, debug=False)
+
+if __name__ == "__main__":
+    start_services()
