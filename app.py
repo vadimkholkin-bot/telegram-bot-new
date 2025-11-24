@@ -3,13 +3,25 @@ from bot import bot_instance
 import logging
 import os
 from telegram import Update
-import json
+import threading
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Функция для запуска бота в фоне
+def start_bot_polling():
+    try:
+        logger.info("🚀 Запуск бота в фоновом режиме...")
+        bot_instance.app.run_polling()
+    except Exception as e:
+        logger.error(f"Ошибка при запуске бота: {e}")
+
+# Запускаем бот в отдельном потоке
+bot_thread = threading.Thread(target=start_bot_polling, daemon=True)
+bot_thread.start()
 
 @app.route('/')
 def index():
