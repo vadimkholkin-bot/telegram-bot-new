@@ -307,7 +307,7 @@ class DvoretskiyBot:
                 await self.process_today_holiday(update, user_name)
                 return
             
-            elif any(cmd in message_lower for cmd in ["ближайший праздник", "следующий праздник", "когда следующий праздник"]):
+            elif any(cmd in message_lollow for cmd in ["ближайший праздник", "следующий праздник", "когда следующий праздник"]):
                 await self.process_next_holiday(update, user_name)
                 return
             
@@ -624,20 +624,16 @@ class DvoretskiyBot:
         user_name = self.get_user_name(user_id)
         await self.process_rules(update, user_name)
 
-    def run(self):
-        """Запуск бота"""
-        print("=" * 60)
-        print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
-        print(f"👥 Группа: {GROUP_CHAT_ID}")
-        print(f"📊 Зарегистрировано пользователей: {len(self.user_data)}")
-        print("🎯 Все системы активированы")
-        print("=" * 60)
-        
-        self.app.run_polling()
+# Создаем экземпляр бота для использования в app.py
+bot_instance = DvoretskiyBot()
 
-if __name__ == "__main__":
-    bot = DvoretskiyBot()
-
-    bot.run()
-
-
+# Для локального тестирования (раскомментируйте если нужно тестировать локально)
+# if __name__ == "__main__":
+#     print("=" * 60)
+#     print("🚀 БОТ ДВОРЕЦКИЙ ЗАПУЩЕН!")
+#     print(f"👥 Группа: {GROUP_CHAT_ID}")
+#     print(f"📊 Зарегистрировано пользователей: {len(bot_instance.user_data)}")
+#     print("🎯 Все системы активированы")
+#     print("=" * 60)
+#     
+#     bot_instance.app.run_polling()
