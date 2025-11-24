@@ -6,17 +6,15 @@ print("=== ЗАПУСК БОТА ДВОРЕЦКИЙ ===")
 
 # Настройка
 BOT_TOKEN = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
+GROUP_CHAT_ID = -1002617255730
 
 # Включим логирование
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+logging.basicConfig(level=logging.INFO)
 
 # Создаем бота
 app = Application.builder().token(BOT_TOKEN).build()
 
-# Хранилище в памяти (простое решение)
+# Хранилище в памяти
 user_names = {}
 
 # Команда /start
@@ -29,31 +27,55 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🤖 Привет, {user_first_name}! Я бот Дворецкий!\n"
             f"Напишите мне ваше имя для регистрации:"
         )
-        # Сохраняем что ждем имя
         user_names[user_id] = {"status": "awaiting_name"}
+        print(f"👤 Новый пользователь: {user_first_name}, ждет имя")
     else:
         name = user_names[user_id].get("name", user_first_name)
         await update.message.reply_text(f"С возвращением, {name}!")
 
-# Обработка обычных сообщений
-async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Обработка сообщений в ЛИЧКЕ
+async def handle_private_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type != "private":
+        return
+        
     user_id = update.message.from_user.id
     text = update.message.text.strip()
     
-    # Если пользователь ожидает регистрацию
+    print(f"📨 Личное сообщение от {user_id}: {text}")
+    
     if user_id in user_names and user_names[user_id].get("status") == "awaiting_name":
-        user_names[user_id] = {
-            "name": text,
-            "status": "registered"
-        }
-        await update.message.reply_text(
-            f"🎉 Отлично, {text}! Вы зарегистрированы!\n"
-            f"Теперь я знаю как вас зовут!"
-        )
+        user_names[user_id] = {"name": text, "status": "registered"}
+        print(f"✅ Пользователь {user_id} зарегистрирован как: {text}")
+        await update.message.reply_text(f"🎉 Отлично, {text}! Вы зарегистрированы!")
     else:
-        # Обычное сообщение
         name = user_names.get(user_id, {}).get("name", "друг")
         await update.message.reply_text(f"Привет, {name}! Вы написали: {text}")
+
+# Обработка сообщений в ГРУППЕ
+async def handle_group_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.message.chat.type == "private":
+        return
+        
+    user_id = update.message.from_user.id
+    text = update.message.text.lower().strip()
+    
+    print(f"👥 Сообщение в группе от {user_id}: {text}")
+    
+    # Получаем имя пользователя
+    user_name = user_names.get(user_id, {}).get("name", "друг")
+    
+    # Ответы на ключевые фразы
+    if "мой день рождения" in text:
+        await update.message.reply_text(f"{user_name}, ваша дата дня рождения еще не сохранена")
+    
+    elif "дни рождения" in text:
+        await update.message.reply_text(f"{user_name}, список дней рождений пока пуст")
+    
+    elif "правила" in text:
+        await update.message.reply_text(f"{user_name}, правила группы:\n1. Уважайте друг друга\n2. Соблюдайте темы")
+    
+    elif "темы" in text:
+        await update.message.reply_text(f"{user_name}, доступные темы:\n• Общение\n• Новости\n• Воспоминания")
 
 # Команда /myinfo
 async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -66,17 +88,18 @@ async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Команда /status
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    await update.message.reply_text(f"🟢 Бот работает! Пользователей в памяти: {len(user_names)}")
+    count = len([u for u in user_names.values() if u.get("status") == "registered"])
+    await update.message.reply_text(f"🟢 Бот работает! Зарегистрировано: {count}")
 
 # Настройка обработчиков
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("myinfo", myinfo_command))
 app.add_handler(CommandHandler("status", status_command))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
+app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_private_messages))
+app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_group_messages))
 
 # Запуск бота
 if __name__ == "__main__":
-    print("🚀 Бот запущен и готов к работе!")
+    print("🚀 Бот запущен и готов!")
     print("📞 Ожидаю сообщения...")
     app.run_polling()
