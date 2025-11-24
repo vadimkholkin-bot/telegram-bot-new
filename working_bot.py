@@ -9,7 +9,10 @@ BOT_TOKEN = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
 GROUP_CHAT_ID = -1002617255730
 
 # Включим логирование
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 # Создаем бота
 app = Application.builder().token(BOT_TOKEN).build()
@@ -33,77 +36,68 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         name = user_names[user_id].get("name", user_first_name)
         await update.message.reply_text(f"С возвращением, {name}!")
 
-# Обработка сообщений в ЛИЧКЕ
-async def handle_private_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Обработка ВСЕХ сообщений (для отладки)
+async def handle_all_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
-    text = update.message.text.strip()
+    text = update.message.text
+    chat_type = update.message.chat.type
+    chat_id = update.message.chat.id
     
-    print(f"📨 Личное сообщение от {user_id}: {text}")
+    print(f"🔍 СООБЩЕНИЕ: chat_type={chat_type}, chat_id={chat_id}, user_id={user_id}, text='{text}'")
     
-    if user_id in user_names and user_names[user_id].get("status") == "awaiting_name":
-        user_names[user_id] = {"name": text, "status": "registered"}
-        print(f"✅ Пользователь {user_id} зарегистрирован как: {text}")
-        await update.message.reply_text(f"🎉 Отлично, {text}! Вы зарегистрированы!")
-    else:
-        name = user_names.get(user_id, {}).get("name", "друг")
-        await update.message.reply_text(f"Привет, {name}! Вы написали: {text}")
-
-# Обработка сообщений в ГРУППЕ
-async def handle_group_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.message.from_user.id
-    text = update.message.text.lower().strip()
+    # ЛИЧНЫЕ сообщения
+    if chat_type == "private":
+        print("📍 Это ЛИЧНОЕ сообщение")
+        if user_id in user_names and user_names[user_id].get("status") == "awaiting_name":
+            user_names[user_id] = {"name": text, "status": "registered"}
+            print(f"✅ Пользователь {user_id} зарегистрирован как: {text}")
+            await update.message.reply_text(f"🎉 Отлично, {text}! Вы зарегистрированы!")
+        else:
+            name = user_names.get(user_id, {}).get("name", "друг")
+            await update.message.reply_text(f"Привет, {name}! Вы написали: {text}")
     
-    print(f"👥 Сообщение в группе от {user_id}: {text}")
-    
-    # Получаем имя пользователя
-    user_name = user_names.get(user_id, {}).get("name", "друг")
-    
-    # Ответы на ключевые фразы
-    if "мой день рождения" in text:
-        await update.message.reply_text(f"{user_name}, ваша дата дня рождения еще не сохранена")
-        return
-    
-    if "дни рождения" in text:
-        await update.message.reply_text(f"{user_name}, список дней рождений пока пуст")
-        return
-    
-    if "правила" in text:
-        rules_text = (
-            f"{user_name}, правила группы:\n\n"
-            "1. 📚 Соблюдайте тематику обсуждений\n"
-            "2. 🚫 Запрещены политические и религиозные темы\n"
-            "3. 💬 Уважайте других участников\n"
-            "4. 🎯 Размещайте сообщения в соответствующих темах\n"
-            "5. 🤖 Бот поможет определить подходящую тему"
-        )
-        await update.message.reply_text(rules_text)
-        return
-    
-    if "темы" in text:
-        topics_text = (
-            f"{user_name}, доступные темы:\n\n"
-            "🏷️ На каждый день\n"
-            "🏷️ Новости\n" 
-            "🏷️ Молодые годы\n"
-            "🏷️ Школьные годы\n"
-            "🏷️ Мы после школы\n"
-            "🏷️ Вечера встречи\n"
-            "🏷️ Моя семья\n"
-            "🏷️ Мой город\n"
-            "🏷️ Мой сад\n"
-            "🏷️ Мой отпуск\n"
-            "🏷️ Я кулинар\n"
-            "🏷️ Хобби\n"
-            "🏷️ Моё здоровье\n"
-            "🏷️ Правила, советы, обучение\n"
-            "🏷️ Юмор и для настроения\n"
-            "🏷️ Мой день рождения"
-        )
-        await update.message.reply_text(topics_text)
-        return
-    
-    # Если не нашли ключевых фраз - не отвечаем
-    print(f"❌ Не нашел ключевых фраз в сообщении: {text}")
+    # ГРУППОВЫЕ сообщения
+    elif chat_type in ["group", "supergroup"]:
+        print(f"📍 Это ГРУППОВОЕ сообщение. ID группы: {chat_id}")
+        
+        # Получаем имя пользователя
+        user_name = user_names.get(user_id, {}).get("name", "друг")
+        text_lower = text.lower()
+        
+        print(f"🔍 Анализирую текст: '{text_lower}'")
+        
+        # Ответы на ключевые фразы
+        if "мой день рождения" in text_lower:
+            print("🎂 Найдена фраза 'мой день рождения'")
+            await update.message.reply_text(f"{user_name}, ваша дата дня рождения еще не сохранена")
+            return
+        
+        elif "дни рождения" in text_lower:
+            print("🎂 Найдена фраза 'дни рождения'")
+            await update.message.reply_text(f"{user_name}, список дней рождений пока пуст")
+            return
+        
+        elif "правила" in text_lower:
+            print("📚 Найдена фраза 'правила'")
+            rules_text = (
+                f"{user_name}, правила группы:\n\n"
+                "1. 📚 Соблюдайте тематику обсуждений\n"
+                "2. 🚫 Запрещены политические и религиозные темы\n"
+                "3. 💬 Уважайте других участников\n"
+                "4. 🎯 Размещайте сообщения в соответствующих темах\n"
+                "5. 🤖 Бот поможет определить подходящую тему"
+            )
+            await update.message.reply_text(rules_text)
+            return
+        
+        elif "темы" in text_lower:
+            print("🏷️ Найдена фраза 'темы'")
+            await update.message.reply_text(f"{user_name}, доступные темы: На каждый день, Новости, Школьные годы и др.")
+            return
+        
+        else:
+            print(f"❌ Не нашел ключевых фраз в групповом сообщении")
+            # В группе не отвечаем на обычные сообщения
 
 # Команда /myinfo
 async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -119,12 +113,11 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = len([u for u in user_names.values() if u.get("status") == "registered"])
     await update.message.reply_text(f"🟢 Бот работает! Зарегистрировано: {count}")
 
-# Настройка обработчиков
+# Настройка обработчиков - ТЕПЕРЬ ОДИН ОБРАБОТЧИК ДЛЯ ВСЕХ СООБЩЕНИЙ
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("myinfo", myinfo_command))
 app.add_handler(CommandHandler("status", status_command))
-app.add_handler(MessageHandler(filters.ChatType.PRIVATE & filters.TEXT & ~filters.COMMAND, handle_private_messages))
-app.add_handler(MessageHandler(filters.ChatType.GROUPS & filters.TEXT & ~filters.COMMAND, handle_group_messages))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_all_messages))
 
 # Запуск бота
 if __name__ == "__main__":
