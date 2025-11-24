@@ -637,4 +637,26 @@ if __name__ == "__main__":
     print("=" * 60)
     
     bot_instance.app.run_polling()
+from flask import Flask
+import threading
+
+# Создаем простой Flask сервер для порта
+flask_app = Flask(__name__)
+
+@flask_app.route('/')
+def health_check():
+    return "🤖 Бот Дворецкий работает!"
+
+@flask_app.route('/health')
+def health():
+    return "OK"
+
+def run_flask():
+    flask_app.run(host='0.0.0.0', port=5000, debug=False)
+
+# Запускаем Flask в отдельном потоке
+flask_thread = threading.Thread(target=run_flask, daemon=True)
+flask_thread.start()
+
+
 
