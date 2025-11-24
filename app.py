@@ -3,23 +3,13 @@ from bot import bot_instance
 import logging
 import os
 from telegram import Update
-import asyncio
-import threading
+import json
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-
-# Создаем event loop для асинхронных операций
-def start_async_loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-# Запускаем event loop в отдельном потоке
-async_thread = threading.Thread(target=start_async_loop, daemon=True)
-async_thread.start()
 
 @app.route('/')
 def index():
@@ -31,27 +21,18 @@ def webhook():
     try:
         # Получаем обновление от Telegram
         update_data = request.get_json()
+        logger.info(f"Получено обновление: {update_data}")
         
         # Создаем объект Update из данных
         update = Update.de_json(update_data, bot_instance.app.bot)
         
-        # Запускаем асинхронную обработку в существующем loop
-        asyncio.run_coroutine_threadsafe(
-            process_update_async(update), 
-            asyncio.get_event_loop()
-        )
+        # Используем синхронную обработку через update_queue
+        bot_instance.app.update_queue.put(update)
         
         return '', 200
     except Exception as e:
         logger.error(f"Ошибка в webhook: {e}")
         return 'Error', 500
-
-async def process_update_async(update):
-    """Асинхронная обработка обновления"""
-    try:
-        await bot_instance.app.process_update(update)
-    except Exception as e:
-        logger.error(f"Ошибка при обработке обновления: {e}")
 
 @app.route('/set_webhook', methods=['GET'])
 def set_webhook():
