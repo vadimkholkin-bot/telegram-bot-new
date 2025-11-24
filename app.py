@@ -4,12 +4,22 @@ import logging
 import os
 from telegram import Update
 import asyncio
+import threading
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Создаем event loop для асинхронных операций
+def start_async_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+# Запускаем event loop в отдельном потоке
+async_thread = threading.Thread(target=start_async_loop, daemon=True)
+async_thread.start()
 
 @app.route('/')
 def index():
@@ -25,8 +35,11 @@ def webhook():
         # Создаем объект Update из данных
         update = Update.de_json(update_data, bot_instance.app.bot)
         
-        # Запускаем асинхронную обработку
-        asyncio.create_task(process_update_async(update))
+        # Запускаем асинхронную обработку в существующем loop
+        asyncio.run_coroutine_threadsafe(
+            process_update_async(update), 
+            asyncio.get_event_loop()
+        )
         
         return '', 200
     except Exception as e:
