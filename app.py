@@ -43,7 +43,7 @@ def set_webhook():
         
         # Получаем имя пользователя для URL
         username = os.environ.get('USER', 'yourusername')
-        webhook_url = f"https://{username}.pythonanywhere.com/webhook"
+        webhook_url = "https://telegram-bot-new-udpy.onrender.com/webhook"
         
         # Устанавливаем веб-хук
         url = f"https://api.telegram.org/bot{token}/setWebhook"
