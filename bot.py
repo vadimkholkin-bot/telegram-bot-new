@@ -27,27 +27,30 @@ def save_data(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 # Включим логирование
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+logging.basicConfig(level=logging.INFO)
 
 # Создаем бота
 app = Application.builder().token(BOT_TOKEN).build()
 
 # Загружаем данные
 user_data = load_data()
+print(f"📊 Загружено пользователей: {len(user_data)}")
 
 # Команда /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
+    user_name = update.message.from_user.first_name
+    
     if str(user_id) not in user_data:
         await update.message.reply_text(
-            "🤖 Привет! Я бот Дворецкий!\n"
-            "Как мне к вам обращаться?"
+            f"🤖 Привет, {user_name}! Я бот Дворецкий!\n"
+            f"Напишите мне ваше имя (как хотите чтобы я к вам обращался)"
         )
+        # Сохраняем временные данные
+        user_data[str(user_id)] = {'temp_name': user_name}
+        save_data(user_data)
     else:
-        name = user_data[str(user_id)]['name']
+        name = user_data[str(user_id)].get('name', user_name)
         await update.message.reply_text(f"С возвращением, {name}!")
 
 # Команда /help  
@@ -58,11 +61,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 /start - начать работу
 /help - помощь
 /myinfo - мои данные
-/group - проверить группу
+/users - список пользователей
 
 📝 В группе я также отвечаю на:
 • "Мой день рождения"
-• "Дни рождения"
+• "Дни рождения" 
 • "Правила"
 • "Темы"
 """
@@ -72,14 +75,21 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def myinfo_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if str(user_id) in user_data:
-        name = user_data[str(user_id)]['name']
-        await update.message.reply_text(f"Ваше имя: {name}")
+        name = user_data[str(user_id)].get('name', 'Не указано')
+        await update.message.reply_text(f"📋 Ваши данные:\nИмя: {name}\nID: {user_id}")
     else:
-        await update.message.reply_text("Вы еще не зарегистрированы!")
+        await update.message.reply_text("Вы еще не зарегистрированы! Напишите /start")
 
-# Команда /group
-async def group_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"ID группы: {GROUP_CHAT_ID}")
+# Команда /users
+async def users_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if user_data:
+        users_list = "📊 Зарегистрированные пользователи:\n"
+        for user_id, data in user_data.items():
+            name = data.get('name', 'Без имени')
+            users_list += f"• {name}\n"
+        await update.message.reply_text(users_list)
+    else:
+        await update.message.reply_text("Пока нет зарегистрированных пользователей")
 
 # Обработка обычных сообщений (регистрация)
 async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,25 +98,25 @@ async def handle_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
         
     user_id = update.message.from_user.id
-    text = update.message.text
+    text = update.message.text.strip()
     
-    # Если пользователь не зарегистрирован - сохраняем имя
-    if str(user_id) not in user_data:
-        user_data[str(user_id)] = {
-            'name': text,
-            'registered_at': update.message.date.isoformat()
-        }
+    # Если пользователь не зарегистрирован полностью - сохраняем имя
+    if str(user_id) in user_data and not user_data[str(user_id)].get('name'):
+        user_data[str(user_id)]['name'] = text
+        user_data[str(user_id)]['registered_at'] = update.message.date.isoformat()
         save_data(user_data)
+        
         await update.message.reply_text(
-            f"Отлично, {text}! Вы зарегистрированы!\n"
-            f"Теперь я буду обращаться к вам по имени в группе."
+            f"🎉 Отлично, {text}! Регистрация завершена!\n"
+            f"Теперь я буду обращаться к вам по имени в группе.\n"
+            f"Используйте /help для списка команд"
         )
 
 # Настройка обработчиков
 app.add_handler(CommandHandler("start", start_command))
 app.add_handler(CommandHandler("help", help_command))
 app.add_handler(CommandHandler("myinfo", myinfo_command))
-app.add_handler(CommandHandler("group", group_command))
+app.add_handler(CommandHandler("users", users_command))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_messages))
 
 # Запуск бота
