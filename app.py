@@ -1,7 +1,8 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from bot import bot_instance
 import logging
 import os
+from telegram import Update
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -18,15 +19,13 @@ def webhook():
     """Обработчик веб-хука от Telegram"""
     try:
         # Получаем обновление от Telegram
-        update = request.get_json()
+        update_data = request.get_json()
+        
+        # Создаем объект Update из данных
+        update = Update.de_json(update_data, bot_instance.app.bot)
         
         # Обрабатываем обновление через бота
-        bot_instance.app.update_queue.put_nowait(
-            bot_instance.app.update_converter.from_dict(
-                bot_instance.app.update_converter._model, 
-                update
-            )
-        )
+        bot_instance.app.process_update(update)
         
         return '', 200
     except Exception as e:
