@@ -1,5 +1,6 @@
 from flask import Flask
 import threading
+import asyncio
 from bot import bot_instance
 import logging
 
@@ -16,15 +17,21 @@ def index():
 def health():
     return "OK"
 
-def run_bot():
-    """Запуск бота в отдельном потоке"""
+async def run_bot_async():
+    """Асинхронный запуск бота"""
     try:
         logger.info("🚀 Запуск бота...")
-        bot_instance.app.run_polling()
+        await bot_instance.app.run_polling()
     except Exception as e:
         logger.error(f"Ошибка бота: {e}")
 
-# Запускаем бот в отдельном потоке при старте Flask
+def run_bot():
+    """Запуск бота в отдельном event loop"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_bot_async())
+
+# Запускаем бот в отдельном потоке
 bot_thread = threading.Thread(target=run_bot, daemon=True)
 bot_thread.start()
 
