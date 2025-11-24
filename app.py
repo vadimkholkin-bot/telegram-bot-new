@@ -1,0 +1,64 @@
+from flask import Flask, request, jsonify
+from bot import bot_instance
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return "🤖 Бот Дворецкий работает! Группа активна."
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    """Обработчик веб-хука от Telegram"""
+    try:
+        # Получаем обновление от Telegram
+        update = request.get_json()
+        
+        # Обрабатываем обновление через бота
+        bot_instance.app.update_queue.put_nowait(
+            bot_instance.app.update_converter.from_dict(
+                bot_instance.app.update_converter._model, 
+                update
+            )
+        )
+        
+        return '', 200
+    except Exception as e:
+        logger.error(f"Ошибка в webhook: {e}")
+        return 'Error', 500
+
+@app.route('/set_webhook', methods=['GET'])
+def set_webhook():
+    """Установка веб-хука - вызовите этот URL один раз"""
+    try:
+        from telegram import Bot
+        import requests
+        
+        token = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
+        
+        # Получаем ваше имя пользователя для URL
+        import os
+        username = os.environ.get('USER', 'yourusername')
+        webhook_url = f"https://{username}.pythonanywhere.com/webhook"
+        
+        # Устанавливаем веб-хук
+        url = f"https://api.telegram.org/bot{token}/setWebhook"
+        response = requests.post(url, json={'url': webhook_url})
+        
+        result = response.json()
+        
+        if result.get('ok'):
+            return f"✅ Веб-хук установлен!<br>URL: {webhook_url}<br>Ответ: {result}"
+        else:
+            return f"❌ Ошибка: {result}"
+            
+    except Exception as e:
+        return f"❌ Ошибка: {str(e)}"
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
