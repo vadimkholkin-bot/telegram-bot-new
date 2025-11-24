@@ -3,6 +3,7 @@ from bot import bot_instance
 import logging
 import os
 from telegram import Update
+import asyncio
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -24,13 +25,20 @@ def webhook():
         # Создаем объект Update из данных
         update = Update.de_json(update_data, bot_instance.app.bot)
         
-        # Обрабатываем обновление через бота
-        bot_instance.app.process_update(update)
+        # Запускаем асинхронную обработку
+        asyncio.create_task(process_update_async(update))
         
         return '', 200
     except Exception as e:
         logger.error(f"Ошибка в webhook: {e}")
         return 'Error', 500
+
+async def process_update_async(update):
+    """Асинхронная обработка обновления"""
+    try:
+        await bot_instance.app.process_update(update)
+    except Exception as e:
+        logger.error(f"Ошибка при обработке обновления: {e}")
 
 @app.route('/set_webhook', methods=['GET'])
 def set_webhook():
@@ -40,8 +48,6 @@ def set_webhook():
         
         token = "7624651707:AAHN9syUPmr5eRSis3xcf8C2YZBZ7r4UE1s"
         
-        # Получаем имя пользователя для URL
-        username = os.environ.get('USER', 'yourusername')
         webhook_url = "https://telegram-bot-new-udpy.onrender.com/webhook"
         
         # Устанавливаем веб-хук
