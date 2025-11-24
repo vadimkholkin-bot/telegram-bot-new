@@ -3,6 +3,7 @@ import threading
 import asyncio
 from bot import bot_instance
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,23 +18,24 @@ def index():
 def health():
     return "OK"
 
-async def run_bot_async():
-    """Асинхронный запуск бота"""
+def run_bot():
+    """Запуск бота в отдельном потоке"""
     try:
         logger.info("🚀 Запуск бота...")
-        await bot_instance.app.run_polling()
+        
+        # Создаем новый event loop для этого потока
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Запускаем бота
+        loop.run_until_complete(bot_instance.app.run_polling())
+        
     except Exception as e:
         logger.error(f"Ошибка бота: {e}")
-
-def run_bot():
-    """Запуск бота в отдельном event loop"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(run_bot_async())
 
 # Запускаем бот в отдельном потоке
 bot_thread = threading.Thread(target=run_bot, daemon=True)
 bot_thread.start()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=False)
